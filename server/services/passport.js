@@ -29,24 +29,15 @@ passport.use(
         callbackURL: '/auth/google/callback',
         proxy: true
     },
-        (accessToken, refreshToken, profile, done) => {
-            User.findOne({googleId: profile.id})
-                .then((existingUser)=>{
-                    if(existingUser){
-                        //true: we've already have that user in DB with given profile id; do nothing
-                        done(null, existingUser);
-                    }
-                    else{
-                        //we dont have this profile id now, so create it
-                        console.log(profile);
-                        new User({googleId: profile.id, Name: profile.displayName}) //<- this is Model Instance
-                            .save()
-                            .then(user =>{done(null, user) //<- an ANOTHER model instance (but it's same record, user return to serialize)
-                            });
-                        //async operation
-                        //need to exactly check save process done then call done
-                        //.then() will be called after save()
-                    }
-                })     
-        })
+        async (accessToken, refreshToken, profile, done) => {
+            const existingUser = await User.findOne({googleId: profile.id});
+            if(existingUser){
+                return done(null, existingUser);
+            }
+            
+            const user = await new User({googleId: profile.id, Name: profile.displayName}).save();
+            done(null, user);   
+        }
+    )     
+        
 );  //create a google strategy instance with constructor's configuration
